@@ -1,39 +1,40 @@
 '''
-module for doing gradient descent to find best parameters
-user provides data in the form of a csv file
-each line is a feature vector
+Module for doing linear regression using both
+batch and stochastic gradient descent to find feature weights
 '''
 
 import pandas
-import csv
-import re
 import Auxiliary
 
-numFeatures = Test.getNumFeatures()
+numFeatures = 0
 learnRate = 0.001
 
-featureWeights = [0 for i in range(numFeatures)]
-
-def getFeatures():
-    return
-
 def calculateWeights(vectors):
-    weights = [0 for i in range(numFeatures)]
+    '''
+    vector is DataFrame with correct value at end
+    '''
+    numFeatures = len(vectors.loc[0])-1
+    weights = pandas.Series([0 for i in range(numFeatures)])
     prevWeights = weights
     while not Auxiliary.converged(weights,prevWeights):
         prevWeights = weights
         weights = batchDescentStep(vectors,weights)
     return weights
 
-def batchDescentStep(vectors,weights):
-    for i in range(numFeatures):
-        derivative = sum(vectorCost(vector,weights) for vector in vectors)
-        weights[i] -= learnRate*derivative
-    return weights
-
 def vectorCost(vector,weights):
-    predictedVal = sum(vectors[i]*weights[i] for i in range)
-    return vectors[0]-predictedVal
+    predictedVal = sum(vector[i]*weights[i] for i in range(numFeatures))
+    return vector[numFeatures]-predictedVal
 
-def stochasticDescentStep(vectors,weights):
-    return vectorCost(vector,weights)
+def batchDescentStep(vectors,weights):
+    newWeights = weights
+    for i in range(numFeatures):
+        derivative = sum(vectorCost(vectors.loc[j],weights)*vectors.loc[j][i] for j in range(len(vectors)))
+        newWeights[i] += learnRate*derivative
+    return newWeights
+
+def stochasticDescentStep(vector,weights):
+    newWeights = weights
+    for i in range(numFeatures):
+        derivative = vectorCost(vector,weights)*vector[i]
+        newWeights[i] += learnRate*derivative
+    return newWeights
