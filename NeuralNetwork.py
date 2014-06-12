@@ -1,39 +1,43 @@
 '''
-module for doing gradient descent to find best parameters
-user provides data in the form of a csv file
-each line is a feature vector
+Module for neural network
 '''
 
+import math
+import random
 import pandas
-import csv
-import re
 import Auxiliary
 
-numFeatures = Test.getNumFeatures()
+# each element of the array is
+layers = []
+numLayers = len(layers)
+numFeatures = 0
+initRange = 0.01
 learnRate = 0.001
 
-featureWeights = [0 for i in range(numFeatures)]
-
-def getFeatures():
-    return
-
 def calculateWeights(vectors):
-    weights = [0 for i in range(numFeatures)]
+    '''
+    vector is DataFrame with correct value at end
+    '''
+    weights = pandas.Series([[random.uniform(-initRange,initRange) for i in range(layers[j])] for j in range(numLayers)])
     prevWeights = weights
     while not Auxiliary.converged(weights,prevWeights):
         prevWeights = weights
-        weights = batchDescentStep(vectors,weights)
+        weights = descentStep(vectors,weights)
     return weights
 
-def batchDescentStep(vectors,weights):
-    for i in range(numFeatures):
-        derivative = sum(vectorCost(vector,weights) for vector in vectors)
-        weights[i] -= learnRate*derivative
-    return weights
+def forwardPropagate():
+    
+
+def backPropagate():
+    
 
 def vectorCost(vector,weights):
-    predictedVal = sum(vectors[i]*weights[i] for i in range)
-    return vectors[0]-predictedVal
+    predictedVal = sum(vector[i]*weights[i] for i in range(numFeatures))
+    return vector[numFeatures]-1.0/(1+math.e**(-predictedVal))
 
-def stochasticDescentStep(vectors,weights):
-    return vectorCost(vector,weights)
+def descentStep(vectors,weights):
+    newWeights = weights
+    for i in range(numFeatures):
+        derivative = sum(vectorCost(vectors.loc[j],weights)*vectors.loc[j][i] for j in range(len(vectors)))
+        newWeights[i] += learnRate*derivative
+    return newWeights
