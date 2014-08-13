@@ -2,15 +2,20 @@
 Implementation of K-means algorithm
 """
 
-import pandas
+import Auxiliary
+import numpy as np
+import pandas as pd
 import random
 
-k = 2
+# number of centers
+K = 2
 
 def distance(vector1,vector2):
-    return sum((vector1[i]-vector2[i])^2 for i in range(len(vector1)))
+    """Calculates Cartesian distance between two feature vectors"""
+    return sum((vector1[i]-vector2[i])^2 for i in range(len(vector1)))^0.5
 
-def findClosest(vector,centers):
+def find_closest(vector,centers):
+    """Finds index of closest center to vector"""
     closestDist = distance(vector, centers[0])
     closestCenter = 0
     for i in len(centers):
@@ -20,26 +25,35 @@ def findClosest(vector,centers):
             closestCenter = i
     return closestCenter
 
-def allConverged(centers,lastCenters):
+def all_converged(centers,lastCenters):
+    """Checks if centers have converged to a stable equilibrium"""
     for i in range(len(centers)):
         if not Auxiliary.converged(centers[i],lastCenters[i]):
             return False
     return True
 
-def getClusterCenters(vectors):
-    numFeatures = len(vectors.loc[0])
+def get_centers(vectors):
+    """Main method for finding cluster centers"""
+    numFeatures = len(vectors[0])
     # randomly choose k starting vectors
-    centers = pandas.Series([])
-    for i in range(k):
-        newStart = vectors.loc[random.randint(1,len(vectors))]
-        centers.append(pandas.Series([newStart]))
-    lastCenters = centers
+    centers = np.array([])
+    # copy vectors before choosing centers so that centers aren't repeated
+    newVectors = vectors
+    indexedVectors = pd.DataFrame(vectors)
+    closestIndex = [0 for i in range(len(vectors))]
+    for i in range(K):
+        newStart = newVectors[random.randint(0,len(vectors)-1)]
+        newVectors = np.delete(newVectors,newStart)
+        centers.append(newStart)
     # repeat algorithm until convergence
-    while not allConverged(centers,lastCenters):
+    while True:
         lastCenters = centers
         for i in len(vectors):
             closestCenter = findClosest(vector,centers)
-            vectors['Closest Center'] = closestCenter
-        grouped = vectors.groupby('Closest Center')
-        centers = grouped.mean()
+            closestIndex[i] = closestCenter
+        indexedVectors['Closest Center'] = closestIndex
+        groupedVectors = indexedVectors.groupby('Closest Center')
+        centers = np.array(grouped.mean())
+        if all_converged(centers,lastCenters):
+            break
     return centers
