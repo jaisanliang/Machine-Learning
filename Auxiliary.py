@@ -5,10 +5,9 @@ including calculators for precision and recall
 
 import numpy as np
 
-def regularize(vectors):
+def normalize(vectors):
     '''
-    Normalize the vectors by expressing each vector 
-    in standard normal form (vectors is numpy array)
+    Normalize the vectors by expressing each vector in standard normal form
     '''
     normVectors=np.float_(vectors)
     # get avg and std of each feature
@@ -23,7 +22,7 @@ def regularize(vectors):
                 normVectors[i][j]=(1.0*normVectors[i][j]-means[j])/stds[j]
     return normVectors
         
-def hasConverged(weights,prevWeights):
+def has_converged(weights,prevWeights):
     '''
     Determine if the learned weights for a feature have converged
     '''

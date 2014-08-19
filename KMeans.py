@@ -2,13 +2,10 @@
 Implementation of K-means algorithm
 """
 
-import Auxiliary
 import numpy as np
 import pandas as pd
 import random
-
-# number of centers
-K = 2
+import Auxiliary
 
 def distance2(vector1,vector2):
     """Calculates Cartesian distance between two feature vectors"""
@@ -28,25 +25,24 @@ def find_closest(vector,centers):
 def all_converged(centers,lastCenters):
     """Checks if centers have converged to a stable equilibrium"""
     for i in range(len(centers)):
-        if not Auxiliary.converged(centers[i],lastCenters[i]):
+        if not Auxiliary.has_converged(centers[i],lastCenters[i]):
             return False
     return True
 
-def get_centers(vectors):
+def kmeans(vectors,numCenters):
     """Main method for finding cluster centers"""
+    print vectors[0]
+    print vectors.shape
+    K=numCenters
     numFeatures = len(vectors[0])
     # randomly choose k starting vectors
     centers = []
-    # copy vectors before choosing centers so that centers aren't repeated
-    newVectors = vectors
-    print vectors[0][0]
-    indexedVectors = pd.DataFrame(vectors,columns=range(numFeatures))
-    print indexedVectors.loc[0]
+    indexedVectors = pd.DataFrame(vectors)
+    indexedVectors = indexedVectors.apply(lambda x: pd.Series(list(x)))
     closestIndex = [0 for i in range(len(vectors))]
     for i in range(K):
-        newStart = newVectors[random.randint(0,len(vectors)-1)]
-        newVectors = np.delete(newVectors,newStart)
-        centers.append(newStart)
+        centers.append(vectors[random.randint(0,len(vectors)-1)])
+    print centers
     # repeat algorithm until convergence
     while True:
         lastCenters = centers
@@ -56,13 +52,27 @@ def get_centers(vectors):
         indexedVectors['Closest Center'] = closestIndex
         groupedVectors = indexedVectors.groupby('Closest Center')
         centers = np.array(groupedVectors.mean())
+        print centers
         if all_converged(centers,lastCenters):
-            break
-    return centers
+            return indexedVectors
 
 irisFile=open("iris.txt","r")
 irisArray=[]
 for line in irisFile:
-    irisArray.append([float(i) for i in line.split(",")[:-1]])
-print irisArray[:3]
-get_centers(np.array(irisArray))
+    irisArray.append([float(i) for i in line.split(",")[:-2]])
+irisArray=np.array(irisArray)
+#irisArray=irisArray.reshape([-1,3])
+#print kmeans(irisArray,3)
+
+from PIL import Image
+im = Image.open("Scorpio.bmp")
+p=np.array(im)
+p=p.reshape([-1,3])
+p=p.astype(float)
+comp=kmeans(p,2)
+pixels = im.load() # create the pixel map
+for i in range(im.size[0]):
+    for j in range(im.size[1]):
+        #pixels[i,j]=(int(p[j*im.size[0]+i][0]),int(p[j*im.size[0]+i][1]),int(p[j*im.size[0]+i][2]))
+        pixels[i,j]=(int(comp.iloc[j*im.size[0]+i][0]),int(comp.iloc[j*im.size[0]+i][1]),int(comp.iloc[j*im.size[0]+i][2]))
+im.show()
