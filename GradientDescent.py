@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from numpy import *
+import matplotlib.pyplot as plt
 import loadFittingDataP1 as fitting
 import loadParametersP1 as parameters
 
@@ -17,15 +18,18 @@ threshold - if successive values of the objective function differ by less than t
 Returns - theta_min, obj_func(theta_min)
 '''
 def gradient_descent(obj_func, grad_func, init_theta, step_size, threshold):
+	print "Starting gradient descent. Initial theta: " + str(np.transpose(init_theta)) + ". Step size " + str(step_size) + " Threshold: " + str(threshold)
 	theta_prev = init_theta
 	theta = theta_prev - step_size * grad_func(theta_prev)
 	count = 0
+	gradnorm = []
 	while abs(obj_func(theta)-obj_func(theta_prev)) > threshold and count < 1000:
-		print obj_func(theta)
+		print "Theta: " + str(np.transpose(theta)) + ". Obj Func: " + str(obj_func(theta))
 		theta_prev = theta
 		theta = theta_prev - step_size * grad_func(theta_prev)
+		gradnorm.append(np.linalg.norm(grad_func(theta_prev)))
 		count += 1
-	return theta, obj_func(theta)
+	return theta, obj_func(theta), count, gradnorm
 
 '''
 Central difference approximation for the gradient of a function
@@ -36,7 +40,8 @@ delta - scalar controlling the difference step size
 Returns - d X 1 gradient vector
 '''
 def gradient_approx(obj_func, theta, delta):
-	return np.array([obj_func(theta+np.array([delta/2*(i==j) for j in range(len(theta))]))-obj_func(theta-np.array([delta/2*(i==j) for j in range(len(theta))])) for i in range(len(theta))])/delta
+#	return [obj_func(theta-np.array([[delta/2*(i==j)] for j in range(len(theta))])) for i in range(len(theta))]	
+	return np.array([obj_func(theta+np.array([[delta/2*(i==j)] for j in range(len(theta))]))-obj_func(theta-np.array([[delta/2*(i==j)] for j in range(len(theta))])) for i in range(len(theta))])/delta
 
 '''
 Performs batch gradient descent procedure to find minimum value min of obj_func
@@ -54,10 +59,12 @@ Returns - theta_min, obj_func(theta_min)
 def batch_gradient_descent(X, y, obj_func, grad_func, init_theta, step_size, threshold):
 	theta_prev = init_theta
 	theta = theta_prev - step_size * grad_func(theta_prev, X, y)
+	hist = []
 	while abs(obj_func(theta, X, y)-obj_func(theta_prev, X, y)) > threshold:
+		hist.append(obj_func(theta, X, y))
 		theta_prev = theta
 		theta = theta_prev - step_size * grad_func(theta_prev, X, y)
-	return theta, obj_func(theta, X, y)
+	return theta, obj_func(theta, X, y), hist
 
 def mini_batch_gradient_descent(X, y, batch_size, obj_func, grad_func, init_theta, step_size, threshold):
 	t_start = 0
@@ -95,12 +102,14 @@ def stochastic_gradient_descent(X, y, obj_func, grad_func, init_theta, learning_
 	t = 0
 	theta_prev = init_theta
 	theta = theta_prev - learning_rate(t) * grad_func(theta_prev, np.array([X[t]]), np.array([y[t]]))
+	hist = []
 	while abs(obj_func(theta, X, y)-obj_func(theta_prev, X, y)) > threshold:
+		hist.append(obj_func(theta, X, y))
 		t += 1
 		t %= len(X)
 		theta_prev = theta
 		theta = theta_prev - learning_rate(t) * grad_func(theta_prev, np.array([X[t]]), np.array([y[t]]))
-	return theta, obj_func(theta, X, y)
+	return theta, obj_func(theta, X, y), hist
 
 def init_globals_gaussian(mean, cov):
 	global neg_gaussian_mean, neg_gaussian_cov, neg_gaussian_coef, neg_gaussian_inv
@@ -147,6 +156,23 @@ def least_square_deriv(theta, X, y):
 def learning_rate(t):
 	return (10**4+t)**(-1)
 
+
+def plot_iter(func, func_deriv, init_theta, step_size, threshold):
+	x_n=[10**i for i in range (-5,5)]
+	l_n=[i for i in range(-5,5)]
+	y_n=[np.linalg.norm(gradient_descent(func,func_deriv,init_theta,step_size,x)[0]-[[26.67],[26.67]]) for x  in x_n]
+	plt.plot(l_n,y_n)
+	plt.title('Quadratic Bowl')
+	plt.xlabel('log(threshold)')
+	plt.ylabel('norm(diff)')
+	plt.show()
+	y_n=[gradient_descent(func,func_deriv,init_theta,step_size,x)[2] for x  in x_n]
+	plt.plot(l_n,y_n)
+	plt.title('Quadratic Bowl')
+	plt.xlabel('log(threshold)')
+	plt.ylabel('iterations')
+	plt.show()
+
 gaussMean,gaussCov,quadBowlA,quadBowlb = parameters.getData()
 
 neg_gaussian_mean = 0
@@ -154,20 +180,58 @@ neg_gaussian_cov = 0
 neg_gaussian_coef = 0
 neg_gaussian_inv = 0
 init_globals_gaussian(gaussMean, gaussCov)
-print gradient_descent(neg_gaussian, neg_gaussian_deriv, [[0],[0]], 10**7, 10**(-10))
+#print "Running gradient descent on negative gaussian:"
+#plot_iter(neg_gaussian, neg_gaussian_deriv, [[0],[0]],10**7,10**(-10))
+#print gradient_descent(neg_gaussian, neg_gaussian_deriv, [[-1],[-1]],10**7, 10**(-10))[2]
 
+#print "Running gradient approx on negative gaussian:"
 quad_A = 0
 quad_b = 0
 init_globals_quad(quadBowlA, quadBowlb)
-print gradient_descent(quad_bowl, quad_bowl_deriv, [[-10],[-10]], 0.01, 10**(1))
+'''
+print "-10,10:"
+print quad_bowl_deriv([[-10],[10]])
+print gradient_approx(quad_bowl,[[-10],[10]],.1) 
+print gradient_approx(quad_bowl,[[-10],[10]],.5) 
+print gradient_approx(quad_bowl,[[-10],[10]],5)
 
+print "100,100: "
+print quad_bowl_deriv([[100],[100]])
+print gradient_approx(quad_bowl,[[100],[100]],.1) 
+print gradient_approx(quad_bowl,[[100],[100]],.5) 
+print gradient_approx(quad_bowl,[[100],[100]],5)
+
+print "32, 34:"
+print quad_bowl_deriv([[32],[-34]])
+print gradient_approx(quad_bowl,[[32],[-34]],.1) 
+print gradient_approx(quad_bowl,[[32],[-34]],.5) 
+print gradient_approx(quad_bowl,[[32],[-34]],5)
+ 
+
+#print "Running gradient descent on quadratic bowl:"
+#plot_iter(quad_bowl,quad_bowl_deriv,[[-13],[-12]],10**(-3),10**(1))
+#y = gradient_descent(quad_bowl, quad_bowl_deriv, [[-10],[-10]], 10**(-1), 10**(-15))[3]
+#print y
+#plt.plot(y)
+#plt.show()
+'''
+print "Running gradient approx on quadratic bowl:"
 print gradient_approx(quad_bowl, [0,0], 0.05)
 
 X,y = fitting.getData()
 X = np.array(X)
 n, d = X.shape
 X = np.array([np.reshape(X[i],(d,1)) for i in range(n)])
-print batch_gradient_descent(X, y, least_square, least_square_deriv, [[0] for i in range(10)], 10**(-5), 10**(-1))
-
-print stochastic_gradient_descent(X, y, least_square, least_square_deriv, [[0] for i in range(10)], learning_rate, 10**(-1))
-
+print "Running batch gradient descent:"
+batch = batch_gradient_descent(X, y, least_square, least_square_deriv, [[0] for i in range(10)], 10**(-5), 10**(-1))
+xb = [i for i in range(len(batch[2]))]
+print batch
+print len(xb)
+print "Running stochastic gradient descent:"
+stoch = stochastic_gradient_descent(X, y, least_square, least_square_deriv, [[0] for i in range(10)], learning_rate, 10**(-1)) 
+xs = [i for i in range(len(stoch[2]))]
+print len(xs)
+print stoch
+plt.plot(xs,stoch[2],xb,batch[2])
+plt.axis([1,80,8000,1000000])
+plt.show()
