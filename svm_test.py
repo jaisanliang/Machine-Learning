@@ -16,11 +16,11 @@ n = X.shape[0]
 C = 10000
 
 # Carry out training, primal and/or dual
-Y_stacked = np.vstack([np.transpose(Y) for i in range(n)])
-XY_prod = np.dot(Y_stacked,X)
-P = matrix(np.dot(XY_prod,np.transpose(XY_prod)).astype(np.double)) # P = Y^T X X^T Y
+Y_mat = np.dot(Y,np.transpose(Y))
+X_mat = np.dot(X,np.transpose(X))
+P = matrix(np.multiply(Y_mat,X_mat)) #P = Y Y^T * X X^T where * is element wise multiplication
 q = matrix(np.array([-1 for i in range(n)]).astype(np.double)) # q = -[1 1 ... 1]^T where there are n ones
-G = matrix(np.transpose(np.hstack((np.identity(n),np.identity(n)))).astype(np.double)) # G = [I I]^T where the Is are n by n and stacked on top of each other
+G = matrix(np.transpose(np.hstack((np.identity(n),-1*np.identity(n)))).astype(np.double)) # G = [I I]^T where the Is are n by n and stacked on top of each other
 h = matrix(np.array([C for i in range(n)] + [0 for i in range(n)]).astype(np.double)) # h = [C 0]^T where there are n Cs and n 0s
 A = matrix(np.transpose(Y).astype(np.double)) # A = Y^T
 b = matrix(np.array([[0]]).astype(np.double)) # b = 0
