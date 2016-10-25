@@ -19,6 +19,13 @@ k_sel = { # stores kernel functions
 }
 k = 'linear'
 
+def load_data(dataset, datatype):
+	print 'Loading dataset: ' + str(datatype) + ' ' + str(dataset) 
+	train = loadtxt('data/data' + str(dataset) + '_' + datatype + '.csv')
+	X = train[:, 0:2].copy()
+	Y = train[:, 2:3].copy()
+	return [X, Y]
+
 # minimize 1/2 |sum(alpha_i y^(i) x^(i))|^2 + sum(alpha_i)
 # s.t. sum(alpha_i y^(i)) = 0
 # where 0 <= alpha_i <= C
@@ -27,12 +34,8 @@ k = 'linear'
 # s.t. Ax = b
 # where Gx <= h
 	
-def svm(dataset, k, C):
+def svm(X, Y, k, C):
 	print '========== Training =========='
-	print 'Dataset: '+str(dataset)+ ' ||| C: '+str(C)	
-	train = loadtxt('data/data'+str(dataset)+'_train.csv')
-	X = train[:, 0:2].copy()
-	Y = train[:, 2:3].copy()
 	
 	n = X.shape[0]
 
@@ -83,29 +86,14 @@ def svm(dataset, k, C):
 		'X': X,
 		'Y': Y,
 		'C': C,
-		'predict': predictSVM,
+		'predictSVM': predictSVM,
 		'alphas': xvals,
 	}
 	return result
-	
 
-def plot(result, title_in):
-	plotDecisionBoundary(result['X'], result['Y'], result['predict'], [-1, 0, 1], title = title_in)
-	pl.show()
-
-	'''
-	print '======Validation======'
-	# load data from csv files
-	validate = loadtxt('data/data'+name+'_validate.csv')
-	X = validate[:, 0:2]
-	Y = validate[:, 2:3]
-	# plot validation results
-	plotDecisionBoundary(X, Y, predictSVM, [-1, 0, 1], title = 'SVM Validate')
-	pl.show()
-	'''
-def find_params(result):	
-	X = result['X']
-	Y = result['Y']
+# Given alphas, find the appropriate w, b (for w^T x + b)
+# Assume linear kernel (aka no kernel)
+def find_params(X, Y, result):
 	C = result['C']
 	xvals = result['alphas']
 	epsilon = 1e-3
@@ -117,14 +105,87 @@ def find_params(result):
 			b = Y[i][0] - np.dot(w,X[i])
 	return {'w': w, 'b': b}
 
-# svm(dataset number, kernel type, c)
+def validate(X, Y, result):	
+	print '======Validation======'
+	correct = 0;
+	n = X.shape[0]
+	for i in range(n):
+		if ( Y[i] == (1 if result['predictSVM'](X[i]) > 0 else -1) ) : # we want sign(predictSVM(x)) 
+			correct = correct + 1
+	print 'Correct | Incorrect'
+	print str(correct) + ' | ' + str(n-correct)
+	print str(correct/float(n)) + ' | ' + str((n-correct)/float(n))
+	return (n-correct)/float(n)
+	
+# plot a given function and data
+def plot(X, Y, predictSVM, title_in):
+	plotDecisionBoundary(X, Y, predictSVM, [-1, 0, 1], title = title_in)
+	pl.show()
+
+# svm(X, Y, kernel type, c)
+'''
 # 2.1
-result = svm(5, 'linear', 1)
-params = find_params(result)
-#plot(result,'Trivial SVM')
+# Show constraints and objective for 4 point example (dataset 5)
+# Which examples are support vectors 
+X, Y = load_data(5, 'train')
+result = svm(X, Y, 'linear', 1)
+params = find_params(X, Y, result)
+plot(X, Y, result['predictSVM'],'Trivial SVM')
 print params
 '''
-for i in [.01,.1,1,10,100]:
-	result = svm(1, 'linear', i)
-	plot(result['X'], result['Y'], result['predict'], 'Trivial SVM. C = ' + str(i))
+'''	
+# 2.2
+# Set C = 1, report / explain decision boundary and classification error rate on training / validation
+for i in range(1,5):
+	X, Y = load_data(i, 'train')
+	result = svm(X, Y, 'linear', 1)
+	plot(X, Y, result['predictSVM'], 'Training Dataset ' + str(i))
+	Xv, Yv = load_data(i, 'validate')
+	validate(Xv, Yv, result)
+	plot(Xv, Yv, result['predictSVM'], 'Validation Dataset ' + str(i))		
+'''
+
+# 2.3 
+# include kernels
+# Explore effects of C in .01, .1, 1, 10, 100 on linear kernels and gaussian rbfs (with varying bandwidth)
+'''
+pl.plot([-2, -1, 0, 1, 2], [0, 33, 76, 78, 74])
+pl.xlabel('log(C)')
+pl.title('No. of SV')
+pl.rcParams.update({'font.size': 25})
+pl.show()
+'''
+'''
+for i in [.01,.1, 1, 10, 100]:
+	X, Y = load_data(2, 'train')
+	result = svm(X, Y, 'linear', i)
+	X, Y = load_data(2, 'validate')
+	plot(X, Y, result['predictSVM'],  'Linear SVM. C = ' + str(i))
+
+
+for j in [.1, 1, 10]:
+	RBF_BANDWIDTH = j
+	for i in [.01, .1, 1, 10, 100]:
+		X, Y = load_data(4, 'train')
+		result = svm(X, Y, 'rbf', i)
+		X, Y = load_data(4, 'validate')
+		plot(X, Y, result['predictSVM'], 'RBF SVM. C = ' + str(i))
+'''
+'''
+table = []
+for i in [1,2,3,4]:
+	for j in [.01, .1, 1, 10, 100]:
+		X, Y = load_data(i, 'train')
+		lin_result = svm(X, Y, 'linear', j)
+		RBF_BANDWIDTH = .1
+		s01_result = svm(X, Y, 'rbf', j)
+		RBF_BANDWIDTH = 1
+		s1_result = svm(X, Y, 'rbf', j)
+		RBF_BANDWIDTH = 10
+		s10_result = svm(X, Y, 'rbf', j)
+		X, Y = load_data(i, 'validate') 
+		data = [validate(X, Y, lin_result), validate(X, Y, s01_result), validate(X, Y, s1_result), validate(X, Y, s10_result)]
+		table.append(data)
+
+print table
 '''
