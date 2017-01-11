@@ -3,48 +3,51 @@ Module for doing linear regression using both
 batch and stochastic gradient descent to find feature weights
 """
 
-import numpy as np
-import pandas as pd
 import Auxiliary
 
-NUMFEATURES = 3
-LEARNRATE = 0.001
+d = 3
+eta = 0.001
 
-def vector_cost(vector,weights):
-    """Calculates difference between actual and predicted (given feature vector) value"""
-    predictedVal = sum(vector[i]*weights[i] for i in range(NUMFEATURES))
-    return vector[NUMFEATURES]-predictedVal
+class LinearRegression(Classifier):
+    def __init__(self):
+        self.w = None
 
-def batchDescentStep(vectors,weights):
-    """Calculates new feature weights after one batch descent step"""
-    newWeights = weights
-    for i in range(NUMFEATURES):
-        derivative = sum(vector_cost(vectors[j],weights)*vectors[j][i] for j in range(len(vectors)))
-        newWeights[i] += LEARNRATE*derivative
-    return newWeights
+    def vector_cost(self,x,y):
+        """Calculates difference between actual and predicted (given feature vector) value"""
+        y_p = np.dot(x,self.w)
+        return y-y_p
 
-def stochasticDescentStep(vector,weights):
-    """Calculates new feature weights after one stochastic descent step"""
-    newWeights = weights
-    for i in range(NUMFEATURES):
-        derivative = vector_cost(vector,weights)*vector[i]
-        newWeights[i] += LEARNRATE*derivative
-    return newWeights
+    def batchDescentStep(self,X,Y):
+        """Calculates new feature weights after one batch descent step"""
+        w_new = np.copy(self.w)
+        for i in range(self.d):
+            grad = sum(self.vector_cost(X[j],Y[j])*X[j][i] for j in range(len(vectors)))
+            w_new[i] += eta*grad
+        w = w
 
-def calculate_weights(vectors,batch=True):
-    """
-    Main method for calculating weights of features
-    Vector is feature vector with correct classification appended
-    """
-    NUMFEATURES = len(vectors[0])-1
-    weights = np.array([0 for i in range(NUMFEATURES)])
-    stochasticIndex = 0
-    while True:
-        prevWeights = weights
-        if batch:
-            weights = batchDescentStep(vectors,weights)
-        else:
-            weights = stochasticDescentStep(vectors[stochasticIndex],weights)
-            stochasticIndex = (stochasticIndex+1)%len(vectors)
-        if Auxiliary.converged(weights,prevWeights):
-            return weights
+    def stochasticDescentStep(self,x,y):
+        """Calculates new feature weights after one stochastic descent step"""
+        w_new = np.copy(w)
+        for i in range(d):
+            grad = self.vector_cost(x,y)*x[i]
+            w_new[i] += eta*grad
+        return newWeights
+
+    def train(self,X,Y,batch=True):
+        """
+        Main method for calculating weights of features
+        Vector is feature vector with correct classification appended
+        """
+        self.d = len(X[0])
+        n = len(X)
+        self.w = np.zeros(d)
+        step = 0
+        while True:
+            w_prev = np.copy(self.w)
+            if batch:
+                self.batchDescentStep(X,Y)
+            else:
+                self.stochasticDescentStep(X[step],Y[step])
+                step = (step+1) % n
+            if Auxiliary.converged(self.w,w_prev):
+                return

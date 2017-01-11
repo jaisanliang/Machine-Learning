@@ -1,6 +1,5 @@
 '''
-Module that contains auxiliary functions for machine learning,
-including calculators for precision and recall
+Module that contains auxiliary functions for machine learning
 '''
 
 import numpy as np
@@ -10,6 +9,8 @@ class Classifier:
         assert len(x) == len(y)
         assert len(x) > 0
     def classify(self, x):
+        pass
+    def test(self, x, y):
         pass
 
 def normalize(vectors):
@@ -52,21 +53,6 @@ def rabin_karp(string, substring):
     https://en.wikipedia.org/wiki/Rabin%E2%80%93Karp_algorithm
     '''
     pass
-
-def has_cycle(head):
-    fast = head
-    slow = head
-    # attempt to increment fast by 2, slow by 1
-    if fast == None or fast.next == None or fast.next.next == None:
-        return False
-    fast = fast.next.next
-    slow = slow.next
-    while fast != slow and fast != None and fast.next != None and fast.next.next != None:
-        fast = fast.next.next
-        slow = slow.next
-    if fast == slow:
-        return True
-    return False 
 
 def regularize(matrix, l):
     n = len(matrix)
