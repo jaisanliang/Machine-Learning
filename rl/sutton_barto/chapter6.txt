@@ -1,0 +1,51 @@
+Exercise 6.1
+This is an exercise to help develop your intuition about why TD methods are often more efficient than Monte Carlo methods. Consider the driving home example and how it is addressed by TD and Monte Carlo methods. Can you imagine a scenario in which a TD update would be better on average than an Monte Carlo update? Give an example scenario - a description of past experience and a current state - in which you would expect the TD update to be better. Here's a hint: Suppose you have lots of experience driving home from work. Then you move to a new building and a new parking lot (but you still enter the highway at the same place). Now you are starting to learn predictions for the new building. Can you see why TD updates are likely to be much better, at least initially, in this case? Might the same sort of thing happen in the original task?
+
+TD updates allow the learner to leverage state values which are already known. When using a Monte Carlo update, you do not update state values until the very end of the episode. Thus, you still estimate that you will reach work in the old amount of time, even though you are early or delayed during your initial trip. On the other hand, DP methods allow you to reevaluate your estimate of your travel time while you are traveling.
+
+Exercise 6.2
+From Figure 6.6, it appears that the first episode results in a change in only V(A). What does this tell you about what happened on the first episode? Why was only the estimate for this one state changed? By exactly how much was it changed?
+
+Since the first episode results in a change in only V(A), this means that the episode only visited state A before terminating. The initial value was 0.5, and the next state value was 0, so the amount of change was 0.1*(0-0.5)=-0.05.
+
+Exercise 6.3
+The specific results shown in Figure 6.7 are dependent on the value of the step-size parameter, alpha. Do you think the conclusions about which algorithm is better would be affected if a wider range of alpha values were used? Is there a different, fixed value of alpha at which either algorithm would have performed significantly better than shown? Why or why not?
+
+If a higher value of alpha was used for the TD method, then the RMS error would plateau at a higher level. If a lower value of alpha was used for the TD method, then the rate of convergence of the RMS error would be slower. Thus, this graph is slightly misleading since the same values of alpha were not used to generate both the Monte Carlo and TD curves.
+
+Exercise 6.4
+In Figure 6.7, the RMS error of the TD method seems to go down and then up again, particularly at high alpha's. What could have caused this? Do you think this always occurs, or might it be a function of how the approximate value function was initialized?
+
+The RMS error
+
+Exercise 6.5
+Above we stated that the true values for the random walk task are 1/6, 2/6, 3/6, 4/6, and 5/6, for states A through E. Describe at least two different ways that these could have been computed. Which would you guess we actually used? Why?
+
+The state values can be computed either by running the TD method until convergence or by solving a system of linear equations. Since the values are exact, they were probably computed by solving a system of equations.
+
+Exercise 6.6: Windy Gridworld with King's Moves
+Re-solve the windy gridworld task assuming eight possible actions, including the diagonal moves, rather than the usual four. How much better can you do with the extra actions? Can you do even better by including a ninth action that causes no movement at all other than that caused by the wind?
+
+Exercise 6.7: Stochastic Wind
+Resolve the windy gridworld task with King's moves, assuming that the effect of the wind, if there is any, is stochastic, sometimes varying by 1 from the mean values given for each column. That is, a third of the time you move exactly according to these values, as in the previous exercise, but also a third of the time you move one cell above that, and another third of the time you move one cell below that. For example, if you are one cell to the right of the goal and you move left, then one-third of the time you move one cell above the goal, one-third of the time you move two cells above the goal, and one-third of the time you move to the goal.
+
+Exercise 6.8
+What is the backup diagram for Sarsa?
+
+THe backup diagram for Sarsa consists of a state-action pair, a state, and then another state-action pair.
+
+Exercise 6.9
+Why is Q-learning considered an off-policy control method?
+
+Q-learning is an off-policy control method because the policy used to choose the actions is usually nondeterministic (an epsilon-greedy policy, for example), whereas the estimated state-action values are for a greedy deterministic policy.
+
+Exercise 6.10
+Consider the learning algorithm that is just like Q-learning except that instead of the maximum over next state-action pairs it uses the expected value, taking into account how likely each action is under the current policy. That is, consider the algorithm otherwise like Q-learning except with the update rule
+Is this new method an on-policy or off-policy method? What is the backup diagram for this algorithm? Given the same amount of experience, would you expect this method to work better or worse than Sarsa? What other considerations might impact the comparison of this method with Sarsa?
+
+This new method is an on-policy method since the estimated state-action values are accurate for the policy being followed. The backup diagram for this method consists of a state-action pair, a state, and all the state-action pairs which can be reached from that state. Given the same amount of experience, this method should converge faster than Sarsa since it effectively imitates Sarsa by taking a weighted average of sample values. However, because of this it is more computationally expensive than Sarsa.
+
+Exercise 6.11
+Describe how the task of Jack's Car Rental (Example 4.2) could be reformulated in terms of afterstates. Why, in terms of this specific task, would such a reformulation be likely to speed convergence?
+
+To reformulate Jack's Car Rental in terms of afterstates, the afterstates can be defined to be the number of cars in the lot at the start of each day, and the actions are defined as moving cars between lots. This formulation would speed convergence because there are many state-action pairs which lead to the same afterstate, and using the reformulation the algorithm can treat these situations as equivalent afterstates.

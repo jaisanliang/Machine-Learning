@@ -1,0 +1,67 @@
+Exercise 7.1
+Why do you think a larger random walk task (19 states instead of 5) was used in the examples of this chapter? Would a smaller walk have shifted the advantage to a different value of n? How about the change in leftside outcome from 0 to -1? Would that have made any difference in the best value of n?
+
+A larger random walk task was used so that a larger range of values of n could be explored, since if a small value of n was used then most walks would terminate in only a few steps. Using a smaller walk would make the curves for each n cluster closer together. Changing the leftside outcome from 0 to -1 would increase the optimal value of n, since the algorithm would have to learn the correct value for the left-hand state instead of starting out with an accurate estimate.
+
+Exercise 7.2
+Why do you think on-line methods worked better than off-line methods on the example task?
+
+On-line methods allow microupdates to the state values to happen during the episode, ensuring that estimated values for states visited later in the episode are calculated using the most up-to-date estimates so far.
+
+Exercise 7.3
+In the lower part of Figure 7.2, notice that the plot for n=3 is different from the others, dropping to low performance at a much lower value of alpha than similar methods. In fact, the same was observed for n=5, n=7, and n=9. Can you explain why this might have been so? In fact, we are not sure ourselves. See http://www.cs.utexas.edu/~ikarpov/Classes/RL/RandomWalk/ for an attempt at a thorough answer by Igor Karpov.
+
+Exercise 7.4
+The parameter lambda characterizes how fast the exponential weighting in Figure 7.4 falls off, and thus how far into the future the lambda-return algorithm looks in determining its backup. But a rate factor such as lambda is sometimes an awkward way of characterizing the speed of the decay. For some purposes it is better to specify a time constant, or half-life. What is the equation relating lambda and the half-life, tau_lambda, the time by which the weighting sequence will have fallen to half of its initial value?
+
+lambda^tau=1/2 => tau=-log_lambda 2
+
+Exercise 7.5
+Although TD(lambda) only approximates the lambda-return algorithm when done online, perhaps there's a slightly different TD method that would maintain the equivalence even in the on-line case. One idea is to define the TD error instead as
+delta_t=R_(t+1)+gamma*V_t(S_(t+1))-V_(t-1)(S_t) and the n-step return as
+R^(n)_t=R_(t+1)+...+gamma^(n-1)R_(t+n)+gamma^n*V_(t+n-1)S_(t+n)
+Show that in this case the modified TD(lambda) algorithm would then achieve exactly
+Delta V_t(S_t)=alpha[G^lambda_t-V_(t-1)(S_t)]
+even in the case of on-line updating with large alpha. In what ways might this modified TD(lambda) be better or worse than the conventional one described in the text? Describe an experiment to assess the relative merits of the two algorithms.
+
+delta_t=R_(t+1)+gamma*V_t(S_(t+1))-V_(t-1)(S_t)
+R^(n)_t=R_(t+1)+...+gamma^(n-1)R_(t+n)+gamma^n*V_(t+n-1)S_(t+n)
+Delta V_t(S_t)=alpha[G^(n)_t-V_t(S_t)]
+
+alpha[G^lambda_t-V_(t-1)(S_t)]
+
+Exercise 7.6
+In Example 7.5, suppose from state s the wrong action is taken twice before the right action is taken. If accumulating traces are used, then how big must the trace parameter lambda be in order for the wrong action to end up with a larger eligibility trace than the right action?
+
+((0+1)*lambda+1)*lambda>1 => lambda^2+lambda-1>0 => lambda > (-1+sqrt(5))/2
+
+Exercise 7.7 (programming)
+Program Example 7.5 and compare accumulate-trace and replace-trace versions of Sarsa(lambda) on it, for lambda=0.9 and a range of alpha values. Can you empirically demonstrate the claimed advantage of replacing traces on this example?
+
+Exercise 7.8
+Draw a backup diagram for Sarsa(lambda) with replacing traces.
+
+In a backup diagram for Sarsa(lambda) with replacing traces, only the trace for the most recently visited version of a state has a nonzero weight, and the weights are the same as the ones in accumulating trace Sarsa(lambda).
+
+Exercise 7.9
+Write pseudocode for an implementation of TD(lambda) that updates only value estimates for states whose traces are greater than some small positive constant.
+
+Initialize V(s) arbitrarily
+Repeat (for each episode):
+	Initialize Z(s)=0, for all s in S
+	Initialize S
+	Repeat (for each step of episode):
+		A <- action given by pi for S
+		Take action A, observe reward, R, and next state, S'
+		delta <- R+gamma*V(S')-V(S)
+		Z(S) <- Z(S)+1
+		For all s in S where Z(s) > delta, where delta is some small positive constant:
+			V(s) <- V(s)+alpha*delta*Z(s)
+			Z(s) <- gamma*lambda*Z(s)
+		S <- S'
+	until S is terminal
+
+Exercise 7.10
+Prove that the forward and backward views of off-line TD(lambda) remain equivalent under their new definitions with variable lambda given in this section. Follow the example of the proof in Section 7.4.
+
+Z_t(s)=gamma*lambda_t*Z_(t-1)(s) if s!=S_t, gamma*lambda_t*Z_(t-1)(s)+1 if s=S_t

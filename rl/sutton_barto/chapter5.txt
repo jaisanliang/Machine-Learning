@@ -1,0 +1,71 @@
+Exercise 5.1
+Consider the diagrams on the right in Figure 5.2. Why does the estimated value function jump up for the last two rows in the rear? Why does it drop off for the whole last row on the left? Why are the frontmost values higher in the upper diagrams than in the lower?
+
+The estimated value function jumps up for the last two rows in the rear because if the player has a sum of 20 or 21, it is very unlikely for the dealer to have a hand which beats him. It drops off for the whole last row on the left because that row represents the dealer having an ace, which expands the set of possible actions that he has and thus makes it more likely that the dealer's final sum will be close to 21. Similarly, this is why the frontmost values are higher in the upper diagrams than in the lower: with a usable ace, the player can potentially hit more in an attempt to get a sum closer to 21.
+
+Exercise 5.2
+What is the backup diagram for Monte Carlo estimation of q_pi?
+
+The backup diagram for Monte Carlo estimation of q_pi is identical to the backup diagram of v_pi, except that the root is a state-action node instead of a state node.
+
+Exercise 5.3
+What is the Monte Carlo estimate analogous to (5.3) for action values, given returns generated using mu?
+
+Q(s,a)=sum_(i=1)^n_s p_i(s)/p'_i(s) G(s,a)/sum_(i=1)^n_s p_i(s)/p'_i(s)
+Where p_i(s)=p(S_(t+1)|S_t,A_t)*product_(k=t+1)^(T_i(S_t)-1) pi(A_k|S_k)p(S_(k+1)|S_k,A_k)
+
+Exercise 5.4: Racetrack (programming)
+Consider driving a race car around a turn like those shown in Figure 5.8. You want to go as fast as possible, but not so fast as to run off the track. In our simplified racetrack, the car is at one of a discrete set of grid positions, the cells in the diagram. The velocity is also discrete, a number of grid cells moved horizontally and vertically per time step. The actions are increments to the velocity components. Each may be changed by +1, -1, or 0 in one step, for a total of nine actions. Both velocity components are restricted to be nonnegative and less than 5, and they cannot both be zero. Each episode begins in one of the randomly selected start states and ends when the car crosses the finish line. The rewards are -1 for each step that stays on the track, and -5 if the agent tries to drive off the track. Actually leaving the track is not allowed, but the position is always advanced by at least one cell along either the horizontal or vertical axes. With these restrictions and considering only right turns, such as shown in the figure, all episodes are guaranteed to terminate, yet the optimal policy is unlikely to be excluded. To make the task more challenging, we assume that on half of the time steps the position is displaced forward or to the right by one additional cell beyond that specified by the velocity. Apply the on-policy Monte Carlo control method to this task to compute the optimal policy from each starting state. Exhibit several trajectories following the optimal policy.
+
+Exercise 5.5
+The algorithm in Figure 5.7 is only valid if the environment is such that all policies are proper, meaning that they produce episodes that always eventually terminate (this assumption was made on the first page of this chapter). This restriction can be lifted if the algorithm is modified to use e-soft policies, which are proper for all environments. What modifications are needed to the algorithm to restrict it to e-soft policies?
+
+To restrict all possible policies to be e-soft, the initialization step has to be changed so that the initial policy pi is e-soft. Also, step (d) has to be changed so that the updated policy pi is e-soft instead of greedy.
+
+Exercise 5.6
+Modify the algorithm for first-visit MC policy evaluation (Figure 5.1) to use the incremental implementation for sample averages described in Section 2.5.
+
+Initialize:
+	pi <- policy to be evaluated
+	V <- an arbitrary state-value function
+	R(s) <- 0 for all s in S
+
+Repeat forever:
+	(a) Generate an episode using pi
+	(b) For each state s appearing in the episode:
+		G <- return following the first occurrence of s
+		R(s) <- R(s)+alpha*(G-R(s))
+
+Exercise 5.7
+Derive the weighted-average update rule (5.5) from (5.4). Follow the pattern of the derivation of the unweighted rule (2.3).
+
+V_n=sum_(k=1)^(n-1) W_k*G_k/sum_(k=1)^(n-1) W_k
+V_n*sum_(k=1)^(n-1) W_k=sum_(k=1)^(n-1) W_k*G_k
+
+V_(n+1)=sum_(k=1)^n W_k*G_k/sum_(k=1)^n W_k
+V_(n+1)*sum_(k=1)^n W_k=sum_(k=1)^n W_k*G_k=V_n*sum_(k=1)^(n-1) W_k+W_n*G_n=V_n*sum_(k=1)^n W_k+W_n*G_n-V_n*W_n
+
+C_n=sum_(k=1)^n W_k
+V_(n+1)=V_n+W_n/C_n*(G_n-V_n)
+
+Exercise 5.8
+Modify the algorithm for the off-policy Monte Carlo control algorithm (Figure 5.7) to use the method described above for incrementally computing weighted averages.
+
+Initialize, for all s in S, a in A(s):
+	Q(s,a) <- arbitrary
+	C <- 0
+	N(s,a) <- 0 ; Numerator and
+	D(s,a) <- 0 ; Denominator of Q(s,a)
+	pi <- an arbitrary deterministic policy
+
+Repeat forever:
+	(a) Select a policy mu and use it to generate an episode:
+		S_0, A_0, R_1, S_1, ..., S_(T-1), A_(T-1), R_T, S_T
+	(b) tau <- latest time at which A_tau != pi(S_tau)
+	(c) For each pair s,a appearing in the episode at time tau or later:
+		t <- the time of first occurrence of s,a such that t>=tau
+		W <- product_(k=t+1)^(T-1) 1/(mu(A_k|S_k))
+		C <- C+W
+		Q(s,a) <- Q(s,a)+W/C*(G_t-Q(s,a)))
+	(d) For each s in S:
+		pi(s) <- argmax_a Q(s,a)

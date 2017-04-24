@@ -1,0 +1,71 @@
+Exercise 4.1
+If pi is the equiprobable random policy, what is q_pi(11,down)? What is q_pi(7,down)?
+
+q_pi(11,down)=-1+0=-1; q_pi(7,down)=-1+(-14)=-15
+
+Exercise 4.2
+Suppose a new state 15 is added to the gridworld just below state 13, and its actions, left, up, right, and down, take the agent to states 12, 13, 14, and 15, respectively. Assume that the transitions from the original states are unchanged. What, then, is v_pi(15) for the equiprobable random policy? Now suppose the dynamics of state 13 are also changed, such that action down from state 13 takes the agent to the new state 15. What is v_pi(15) for the equiprobable random policy in this case?
+
+v_pi(15)=-1+0.25*(-22-20-14+v_pi(15)) => 0.75*v_pi(15)=-15 => v_pi(15)=-20
+v_pi(13)=-1+0.25*(-22-20-14+v_pi(15)), v_pi(15)=-1+0.25*(-22+v_pi(13)-14+v_pi(15))
+=> v_pi(13)=-15+0.25*v_pi(15), v_pi(15)=-10+0.25*v_pi(13)+0.25*v_pi(15)
+=> 3*v_pi(15)=-40+v_pi(13) => 3*v_pi(15)=-40-15+0.25*v_pi(15) => 2.75*v_pi(15)=-55 => v_pi(15)=-20 => v_pi(13)=-19
+
+Exercise 4.3
+What are the equations analogous to (4.3), (4.4), and (4.5) for the action-value function q_pi and its successive approximation by a sequence of functions q0,q1,q2,...?
+
+q_pi(s,a)=E_pi[R_(t+1)+gamma*R_(t+2)+gamma^2*R_(t+3)+...|S_t=s,A_t=a]
+=E_pi[R_(t+1)+gamma*q_pi(s',a)|S_t=s,A_t=a]
+=sum_s' p(s'|a,s)*(r(s',a,s)+gamma*sum_a' pi(a'|s')*q_pi(s',a'))
+q_(k+1)(s,a)=sum_s' p(s'|a,s)*(r(s',a,s)+gamma*sum_a' pi(a'|s')*q_k(s',a'))
+
+Exercise 4.4
+In some undiscounted episodic tasks there may be policies for which eventual termination is not guaranteed. For example, in the grid problem above it is possible to go back and forth between two states forever. In a task that is otherwise perfectly sensible, v_pi(s) may be negative infinity for some policies and states, in which case the algorithm for iterative policy evaluation given in Figure 4.1 will not terminate. As a purely practical matter, how might we amend this algorithm to assure termination even in this case? Assume that eventual termination is guaranteed under the optimal policy.
+
+In order to guarantee termination of the policy evaluation algorithm, we can impose a lower bound on the state values in order to stop the updates from diverging to negative infinity in the special cases.
+
+Exercise 4.5 (programming)
+Write a program for policy iteration and re-solve Jack's car rental problem with the following changes. One of Jack's employees at the first location rides a bus home each night and lives near the second location. She is happy to shuttle one car to the second location for free. Each additional car still costs $2, as do all cars moved in the other direction. In addition, Jack has limited parking space at each location. If more than 10 cars are kept overnight at a location (after any moving of cars), then an additional cost of $4 must be incurred to use a second parking lot (independent of how many cars are kept there). These sorts of nonlinearities and arbitrary dynamics often occur in real problems and cannot easily be handled by optimization methods other than dynamic programming. To check your program, first replicate the results given for the original problem. If your computer is too slow for the full problem, cut all the numbers of cars in half.
+
+Exercise 4.6
+How would policy iteration be defined for action values? Give a complete algorithm for computing q_*, analogous to Figure 4.3 for computing v_*. Please pay special attention to this exercise, because the ideas involved will be used throughout the rest of the book.
+
+1. Initialization
+q(s,a) in R and pi(s) in A(s) arbitrarily for all s in S
+
+2. Policy Evaluation
+Repeat
+	Delta <- 0
+	For each s in S and a in A(s):
+		temp = q(s,a)
+		q(s,a)=sum_s' p(s'|a,s)*(r(s',a,s)+gamma*sum_a' pi(a'|s')*q(s',a'))
+		Delta = max(Delta,|temp-q(s,a)|)
+	until Delta < Theta (a small positive number)
+
+3. Policy Improvement
+policy-stable <- true
+For each s in S and a in A(s):
+	temp <- q(s,a)
+	pi(s)=argmax q(s,a)
+	if temp != pi(s), then policy-stable <- false
+If policy-stable, then stop and return q and pi, else go to 2
+
+Exercise 4.7
+Suppose you are restricted to considering only policies that are e-soft, meaning that the probability of selecting each action in each state, s, is at least e/|A(s)|. Describe qualitatively the changes that would be required in each of the steps 3, 2, and 1, in that order, of the policy iteration algorithm for v_* (Figure 4.3).
+
+If e-soft policies are required, policy improvement would have to be changed so that pi(a|s)=e/|A(s)| for nonoptimal actions and the rest of the probability distribution is given to the optimal action. Policy evaluation and remains the same, while initialization has to be changed so that every action has probability at least e/|A(s)| of being selected.
+
+Exercise 4.8
+Why does the optimal policy for the gambler's problem have such a curious form? In particular, for capital of 50 it bets it all on one flip, but for capital of 51 it does not. Why is this a good policy?
+
+The graph of the value function for the gambler's problem is piecewise concave down when p_h=0.4. This means that if the player is betting to maximize expected value, then the player would rather bet a high amount than a low amount (as a result of Jensen's inequality).
+
+Exercise 4.9 (programming)
+Implement value iteration for the gambler's problem and solve it for p_h=0.25 and p_h=0.55. In programming, you may find it convenient to introduce two dummy states corresponding to termination with capital of 0 and 100, giving them values of 0 and 1 respectively. Show your results graphically, as in Figure 4.6. Are your results stable as theta->0?
+
+The optimal policies are not stable as theta (the parameter controlling the convergence of the state values) goes to 0.
+
+Exercise 4.10
+What is the analog of the value iteration backup (4.10) for action values, q_(k+1)(s,a)?
+
+q_(k+1)(s,a)=sum_s' p(s'|a,s)*(r(s',a,s)+gamma*max_a' q_k(s',a'))

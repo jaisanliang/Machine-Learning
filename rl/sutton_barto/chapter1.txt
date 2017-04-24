@@ -1,0 +1,24 @@
+Exercise 1.1: Self-Play
+Suppose, instead of playing against a random opponent, the reinforcement learning algorithm described above played against itself. What do you think would happen in this case? Would it learn a different way of playing?
+
+By playing against itself, the tic-tac-toe algorithm may be able to learn the optimal strategy faster, but it also may become stuck in a local minimum more frequently than if it played a series of random players. Assuming that our algorithm is a fast learner, repeatedly playing itself simulates playing stronger and stronger opponents over time, which will force the algorithm to improve faster than playing many weak players. However, playing different random players increases the pool of strategies that the algorithm is trained against, making it more robust and less prone to devising strategies that counter a specific playstyle.
+
+Exercise 1.2: Symmetries
+Many tic-tac-toe positions appear different but are really the same because of symmetries. How might we amend the reinforcement learning algorithm described above to take advantage of this? In what ways would this improve it? Now think again. Suppose the opponent did not take advantage of symmetries. In that case, should we? Is it true, then, that symmetrically equivalent positions should necessarily have the same value?
+
+By taking into account symmetries, we can reduce the state space that the algorithm has to search over and obtain value functions for, which may lead to faster training times. It is not necessary that we take advantage of symmetries, though it does make computations more tractable, and it increases the sample size for symmetric positions that we pool together, allowing us to make better estimates of the true value at that position. If the opponent did not take advantage of symmetries, then symmetrically equivalent positions might have different values, so therefore it may be advantageous not to constrict the state space.
+
+Exercise 1.3: Greedy Play
+Suppose the reinforcement learning player was greedy, that is, it always played the move that brought it to the position that it rated the best. Would it learn to play better, or worse, than a nongreedy player? What problems might occur?
+
+Greedy players are highly sensitive to initial parameter initialization of their value functions. In the short run, they may perform better than nongreedy players, but in the long run nongreedy players will almost always have an advantage because they will explore more of the state space and thus sample actions that at first appeared not to be viable.
+
+Exercise 1.4: Learning from Exploration
+Suppose learning updates occurred after all moves, including exploratory moves. If the step-size parameter is appropriately reduced over time, then the state values would converge to a set of probabilities. What are the two sets of probabilities computed when we do, and when we do not, learn from exploratory moves? Assuming that we do continue to make exploratory moves, which set of probabilities might be better to learn? Which would result in more wins?
+
+When the state-value function is restricted to only update after greedy moves, the state values converge to the probability of winning from that state, given that a greedy policy is followed. If updates also happen after exploratory moves, then the state values converge to the probability of winning from that state while following a greedy policy, plus a term that is proportional to the difference between the probability of winning from that state and the average probability of winning over all states. This term is negative is the state is better than average and positive if the state is worse than average, and accounts for the stochastic nature of exploratory actions. Assuming that exploratory moves continue to be made, the second set of probabilities more accurately captures the true probability of winning. The two sets of probabilities should lead to the same win ratio for the player.
+
+Exercise 1.5: Other Improvements
+Can you think of other ways to improve the reinforcement learning player? Can you think of any better way to solve the tic-tac-toe problem as posed?
+
+Taking symmetries into account will aid convergence of the state values and reduce the variance of the estimates. Since the state space of the tic-tac-toe player is relatively small (only 9! possible games and less than 2^9 possible board positions, not accounting for symmetry), brute force computation of the optimal strategy is possible.

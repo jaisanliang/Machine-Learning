@@ -1,0 +1,44 @@
+Exercise 2.1
+In the comparison shown in Figure 2.1, which method will perform best in the long run in terms of cumulative reward and cumulative probability of selecting the best action? How much better will it be? Express your answer quantitatively.
+
+The epsilon-greedy method with epsilon=0.01 will have the largest cumulative reward and largest cumulative probability of selecting the best action. It will select the optimal action with probability 0.99+0.01/10=0.991 (with a 10-armed testbed) and achieve a reward of 1.55*0.99 (since the reward for exploratory actions has mean 0), while the epsilon-greedy method with epsilon=0.1 will select the optimal action with probability 0.9+0.1/10=0.91 and achieve a reward of 1.55*0.9.
+
+Exercise 2.2
+How does the softmax action selection method using the Gibbs distribution fare on the 10-armed testbed? Implement the method and run it at several temperatures to produce graphs similar to those in Figure 2.1. To verify your code, first implement the "e-greedy methods and
+reproduce some specific aspect of the results in Figure 2.1.
+
+Exercise 2.3
+Show that in the case of two actions, the softmax operation using the Gibbs distribution becomes the logistic, or sigmoid, function commonly used in artificial neural networks. What effect does the temperature parameter have on the function?
+
+In the case of two actions, the probabilities become e^(Q_t(1)/tau)/(e^(Q_t(1)/tau)+e^(Q_t(2)/tau))=1/(1+e^((Q_t(2)-Q_t(1))/tau)), which is the sigmoid function. The temperature parameter tau controls the spread of the sigmoid. High values of tau result in the "interesting" region of the sigmoid (where the sigmoid is not nearly 0 or 1) being large, which leads to actions having approximately the same probability of being selected.
+
+Exercise 2.4
+Give pseudocode for a complete algorithm for the n-armed bandit problem. Use greedy action selection and incremental computation of
+action values with alpha = 1/k step-size parameter. Assume a function bandit(a) that takes an action and returns a reward. Use arrays and variables; do not subscript anything by the time index t (for examples of this style of pseudocode, see Figures 4.1 and 4.3). Indicate how the action values are initialized and updated after each reward. Indicate how the step-size parameters are set for each action as a function of how many times it has been tried.
+
+Initialize an array v(s) = 0 and c(s), where |s|=n (c keeps track of the counts
+Repeat
+	Pick s=argmax v(s)
+	Update c(s)<-c(s)+1
+	Observe reward r for performing action s
+	Update v(s)<-v(s)+(r-v(s))/c(s)
+Output v(s)
+
+Exercise 2.5
+If the step-size parameters, alpha_k, are not constant, then the estimate Q_k is a weighted average of previously received rewards with a weighting different from that given by (2.6). What is the weighting on each prior reward for the general case, analogous to (2.6), in terms of alpha_k?
+
+Q_(k+1)=Q_k+alpha_k(R_k-Q_k)=alpha_k*R_k+(1-alpha_k)*Q_k=alpha_k*R_k+(1-alpha_k)*(Q_(k-1)+alpha_(k-1)(R_(k-1)-Q_(k-1)))=alpha_k*R_k+(1-alpha_k)*(alpha_(k-1)R_(k-1)+(1-alpha_(k-1))Q_(k-1)))=...
+The coefficient of R_i is (1-alpha_k)*(1-alpha_(k-1))*(1-alpha_(k-2))*...*(1-alpha_(i+1))*alpha_i
+
+Exercise 2.6
+Design and conduct an experiment to demonstrate the difficulties that sample-average methods have for nonstationary problems. Use a modified version of the 10-armed testbed in which all the q_*(a) start out equal and then take independent random walks. Prepare plots like Figure 2.1 for an action-value method using sample averages, incrementally computed by alpha = 1/k, and another action-value method using a constant step-size parameter, alpha = 0.1. Use epsilon = 0.1 and, if necessary, runs longer than 1000 plays.
+
+Exercise 2.7
+The results shown in Figure 2.2 should be quite reliable because they are averages over 2000 individual, randomly chosen 10-armed bandit tasks. Why, then, are there oscillations and spikes in the early part of the curve for the optimistic method? What might make this method perform particularly better or worse, on average, on particular early plays?
+
+The early part of the optimal action curve for the optimistic method is unstable because after sampling each bandit one time, the learner learns the optimal action but not the optimal value for that action. Therefore, on step n+1 it greedily picks the optimal action across most of the tasks, driving down the estimate of the value for that action towards the true value. The optimistic method is highly sensitive to noisy sample values of the optimal action; if early sample values are consistently below the true value, the learner will only slowly learn the optimal action.
+
+Exercise 2.8
+Suppose you face a binary bandit task whose true action values change randomly from play to play. Specifically, suppose that for any play the true values of actions 1 and 2 are respectively 0.1 and 0.2 with probability 0.5 (case A), and 0.9 and 0.8 with probability 0.5 (case B). If you are not able to tell which case you face at any play, what is the best expectation of success you can achieve and how should you behave to achieve it? Now suppose that on each play you are told if you are facing case A or case B (although you still don't know the true action values). This is an associative search task. What is the best expectation of success you can achieve in this task, and how should you behave to achieve it?
+
+If you're unable to tell which bandit task you're facing, you can only choose action 1 with probability p and action 2 with probability 1-p. Then, the expected value is p(0.5*0.1+0.9*0.5)+(1-p)(0.5*0.2+0.5*0.8)=0.5p+0.5(1-p)=0.5. How you behave does not change your expected reward. However, if you are told which case you're facing, you can learn separate action values for each case and achieve an expected reward of 0.5*0.2+0.5*0.9=0.55 in the long run.

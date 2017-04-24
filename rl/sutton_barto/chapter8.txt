@@ -1,0 +1,31 @@
+Exercise 8.1
+The nonplanning method looks particularly poor in Figure 8.6 because it is a one-step method; a method using eligibility traces would do better. Do you think an eligibility trace method could do as well as the Dyna method? Explain why or why not.
+
+An eligibility trace method would converge to the optimal policy faster than a one-step method, but not faster than the Dyna method. The planning portion of Dyna stochastically samples n states and actions and updates the state values, while using eligibility traces only updates the state values once per step.
+
+Exercise 8.2
+Why did the Dyna agent with exploration bonus, Dyna-Q+, perform better in the first phase as well as in the second phase of the blocking and shortcut experiments?
+
+Dyna-Q+ performs better in the first phase of the experiment because at the very start, the agent will be inclined to choose actions which have not been chosen yet while in standard Dyna-Q all actions are weighted more equally. In the second phase, Dyna-Q+ explores actions which have not been taken recently, allowing it to more quickly find the optimal actions in the changed environment.
+
+Exercise 8.3
+Careful inspection of Figure 8.8 reveals that the difference between Dyna-Q+ and Dyna-Q narrowed slightly over the first part of the
+experiment. What is the reason for this?
+
+Once the optimal state values and actions have been found, Dyna-Q+ will choose suboptimal actions more frequently than standard Dyna-Q. Thus, the slope of the graph for Dyna-Q will be steeper (the average reward will be higher) than the slope of the graph for Dyna-Q+.
+
+Exercise 8.4 (programming)
+The exploration bonus described above actually changes the estimated values of states and actions. Is this necessary? Suppose the bonus kappa sqrt(tau) was used not in backups, but solely in action selection. That is, suppose the action selected was always that for which Q(S,a)+kappa sqrt(tau_(Sa)) was maximal. Carry out a gridworld experiment that tests and illustrates the strengths and weaknesses of this alternate approach.
+
+Exercise 8.5
+The analysis above assumed that all of the b possible next states were equally likely to occur. Suppose instead that the distribution was highly skewed, that some of the b states were much more likely to occur than most. Would this strengthen or weaken the case for sample backups over full backups? Support your answer.
+
+If the distribution of next states was more highly skewed, then full backups would have an advantage over sample backups. Full backups allow rare events to be factored into every value update, whereas these events would likely not be taken into account if sample backups were used.
+
+Exercise 8.6
+Some of the graphs in Figure 8.14 seem to be scalloped in their early portions, particularly the upper graph for b=1 and the uniform distribution. Why do you think this is? What aspects of the data shown support your hypothesis?
+
+
+
+Exercise 8.7 (programming)
+If you have access to a moderately large computer, try replicating the experiment whose results are shown in the lower part of Figure 8.14. Then try the same experiment but with b = 3. Discuss the meaning of your results.
