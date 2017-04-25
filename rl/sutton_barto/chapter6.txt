@@ -6,7 +6,7 @@ TD updates allow the learner to leverage state values which are already known. W
 Exercise 6.2
 From Figure 6.6, it appears that the first episode results in a change in only V(A). What does this tell you about what happened on the first episode? Why was only the estimate for this one state changed? By exactly how much was it changed?
 
-Since the first episode results in a change in only V(A), this means that the episode only visited state A before terminating. The initial value was 0.5, and the next state value was 0, so the amount of change was 0.1*(0-0.5)=-0.05.
+Since the first episode results in a change in only V(A), this means that the episode terminated on the left side. If it not terminated on the right side, then only V(E) would have been updated instead. The initial value was 0.5, and the next state value was 0, so the amount of change was 0.1*(0-0.5)=-0.05.
 
 Exercise 6.3
 The specific results shown in Figure 6.7 are dependent on the value of the step-size parameter, alpha. Do you think the conclusions about which algorithm is better would be affected if a wider range of alpha values were used? Is there a different, fixed value of alpha at which either algorithm would have performed significantly better than shown? Why or why not?
