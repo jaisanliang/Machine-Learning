@@ -64,4 +64,4 @@ Repeat (for each episode):
 Exercise 7.10
 Prove that the forward and backward views of off-line TD(lambda) remain equivalent under their new definitions with variable lambda given in this section. Follow the example of the proof in Section 7.4.
 
-Z_t(s)=gamma*lambda_t*Z_(t-1)(s) if s!=S_t, gamma*lambda_t*Z_(t-1)(s)+1 if s=S_t
+

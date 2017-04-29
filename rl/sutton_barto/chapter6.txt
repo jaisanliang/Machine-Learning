@@ -16,7 +16,7 @@ If a higher value of alpha was used for the TD method, then the RMS error would 
 Exercise 6.4
 In Figure 6.7, the RMS error of the TD method seems to go down and then up again, particularly at high alpha's. What could have caused this? Do you think this always occurs, or might it be a function of how the approximate value function was initialized?
 
-The RMS error
+For high values of alpha, when all values are initialized to some intermediate value, the value functions approach their true values but then overshoot or undershoot and continue oscillating. This behavior doesn't happen if the value functions are initialized with extreme values such as 0 or 1. In that case, the RMS error quickly plateaus.
 
 Exercise 6.5
 Above we stated that the true values for the random walk task are 1/6, 2/6, 3/6, 4/6, and 5/6, for states A through E. Describe at least two different ways that these could have been computed. Which would you guess we actually used? Why?

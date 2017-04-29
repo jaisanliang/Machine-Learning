@@ -1,2 +1,12 @@
 Exercise 11.1
 Design an on-policy method for undiscounted, continuing tasks.
+
+Initialize R* and Q(s,a), for all s,a, arbitrarily
+Repeat forever:
+	S <- current state
+	Choose action A in S using policy derived from Q (e.g., e-greedy)
+	Take action A, observe R, S'
+	Choose A' from S' using policy derived from Q (e.g., e-greedy)
+	delta <- R+Q(S',A')-Q(S,A)-R*
+	Q(S,A) <- Q(S,A)+alpha*delta
+	R* <- R*+beta*delta
