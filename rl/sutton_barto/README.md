@@ -1,0 +1,1 @@
+Implementations of algorithms, reproductions of diagrams, and solutions to exercises from "Reinforcement Learning: An Introduction" (http://people.inf.elte.hu/lorincz/Files/RL_2006/SuttonBook.pdf) by Sutton and Barto, 2nd edition.
