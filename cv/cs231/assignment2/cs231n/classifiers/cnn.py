@@ -36,6 +36,8 @@ class ThreeLayerConvNet(object):
         self.params = {}
         self.reg = reg
         self.dtype = dtype
+        self.conv_param = {'stride': 1, 'pad': (filter_size - 1) / 2}
+        self.pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
 
         ############################################################################
         # TODO: Initialize weights and biases for the three-layer convolutional    #
@@ -47,7 +49,15 @@ class ThreeLayerConvNet(object):
         # hidden affine layer, and keys 'W3' and 'b3' for the weights and biases   #
         # of the output affine layer.                                              #
         ############################################################################
-        pass
+        C, H, W = input_dim
+        out_height = 1 + (1 + (H + 2*self.conv_param['pad'] - filter_size)/self.conv_param['stride'] - self.pool_param['pool_height']) / self.pool_param['stride']
+        out_width = 1 + (1 + (W + 2*self.conv_param['pad'] - filter_size)/self.conv_param['stride'] - self.pool_param['pool_width']) / self.pool_param['stride']
+        self.params['W1'] = np.random.normal(scale=weight_scale,size=(num_filters,C,filter_size,filter_size))
+        self.params['b1'] = np.zeros(num_filters)
+        self.params['W2'] = np.random.normal(scale=weight_scale,size=(num_filters*out_height*out_width,hidden_dim))
+        self.params['b2'] = np.zeros(hidden_dim)
+        self.params['W3'] = np.random.normal(scale=weight_scale,size=(hidden_dim,num_classes))
+        self.params['b3'] = np.zeros(num_classes)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -66,20 +76,16 @@ class ThreeLayerConvNet(object):
         W2, b2 = self.params['W2'], self.params['b2']
         W3, b3 = self.params['W3'], self.params['b3']
 
-        # pass conv_param to the forward pass for the convolutional layer
         filter_size = W1.shape[2]
-        conv_param = {'stride': 1, 'pad': (filter_size - 1) // 2}
-
-        # pass pool_param to the forward pass for the max-pooling layer
-        pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
-
-        scores = None
+        
         ############################################################################
         # TODO: Implement the forward pass for the three-layer convolutional net,  #
         # computing the class scores for X and storing them in the scores          #
         # variable.                                                                #
         ############################################################################
-        pass
+        out, cache1 = conv_relu_pool_forward(X, W1, b1, self.conv_param, self.pool_param)
+        out, cache2 = affine_relu_forward(out, W2, b2)
+        scores, cache3 = affine_forward(out, W3, b3)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -94,7 +100,17 @@ class ThreeLayerConvNet(object):
         # data loss using softmax, and make sure that grads[k] holds the gradients #
         # for self.params[k]. Don't forget to add L2 regularization!               #
         ############################################################################
-        pass
+        loss, dx = softmax_loss(scores, y)
+        dx, dw, db = affine_backward(dx, cache3)
+        grads['W3'], grads['b3'] = dw, db
+        dx, dw, db = affine_relu_backward(dx, cache2)
+        grads['W2'], grads['b2'] = dw, db
+        dx, dw, db = conv_relu_pool_backward(dx, cache1)
+        grads['W1'], grads['b1'] = dw, db
+        grads['W1'] += self.reg*W1
+        grads['W2'] += self.reg*W2
+        grads['W3'] += self.reg*W3
+        loss += self.reg*(np.sum(W1**2)+np.sum(W2**2)+np.sum(W3**2))/2
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
