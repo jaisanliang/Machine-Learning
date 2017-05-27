@@ -1,3 +1,7 @@
+import pdb
+import sys
+import math
+
 import numpy as np
 import tensorflow as tf
 import gym
@@ -13,7 +17,6 @@ def normc_initializer(std=1.0):
         out *= std / np.sqrt(np.square(out).sum(axis=0, keepdims=True))
         return tf.constant(out)
     return _initializer
-
 
 def dense(x, size, name, weight_init=None):
     """
@@ -46,7 +49,7 @@ def explained_variance_1d(ypred,y):
     Var[ypred - y] / var[y]. 
     https://www.quora.com/What-is-the-meaning-proportion-of-variance-explained-in-linear-regression
     """
-    assert y.ndim == 1 and ypred.ndim == 1    
+    assert y.ndim == 1 and ypred.ndim == 1
     vary = np.var(y)
     return np.nan if vary==0 else 1 - np.var(y-ypred)/vary
 
@@ -67,6 +70,49 @@ def categorical_sample_logits(logits):
 def pathlength(path):
     return len(path["reward"])
 
+class NeuralValueFunction(object):
+    def __init__(self, ob_dim):
+        self.sess = tf.Session()
+        self.sess.__enter__()
+
+        self.sy_obs = tf.placeholder(tf.float32, [None,ob_dim])
+        self.sy_vals = tf.placeholder(tf.float32, [None])
+
+        beta = 0.0000
+        num_h = 5
+        w1 = tf.Variable(tf.truncated_normal([ob_dim,num_h], stddev=1.0/ob_dim**0.5))
+        b1 = tf.Variable(tf.zeros(num_h))
+        h1 = tf.nn.relu(tf.matmul(self.sy_obs,w1)+b1)
+
+        w2 = tf.Variable(tf.truncated_normal([num_h,num_h], stddev=1.0/num_h**0.5))
+        b2 = tf.Variable(tf.zeros(num_h))
+        h2 = tf.nn.relu(tf.matmul(h1,w2)+b2)
+        #w2 = tf.Variable(tf.truncated_normal([num_h,1], stddev=1.0/num_h**0.5))
+        #b2 = tf.Variable(tf.zeros(1))
+        #self.pred_vals = tf.reshape(tf.matmul(h1,w2)+b2,shape=[-1])
+
+        w3 = tf.Variable(tf.truncated_normal([num_h,1], stddev=1.0/num_h**0.5))
+        b3 = tf.Variable(tf.zeros(1))
+        self.pred_vals = tf.reshape(tf.matmul(h2,w3)+b3,shape=[-1])
+
+        loss = tf.reduce_mean(self.sy_vals-self.pred_vals)
+        reg = tf.nn.l2_loss(w1)+tf.nn.l2_loss(w2)
+        loss = tf.reduce_mean(loss+beta*reg)
+        self.train_step = tf.train.AdamOptimizer().minimize(loss)
+
+        init = tf.global_variables_initializer()
+        self.sess.run(init)
+
+    def fit(self, X, y):
+        batch_size = 32
+        for i in range(len(X)/batch_size):
+            X_batch = X[i*batch_size:(i+1)*batch_size]
+            y_batch = y[i*batch_size:(i+1)*batch_size]
+            _ = self.sess.run(self.train_step, feed_dict={self.sy_obs: X_batch, self.sy_vals: y_batch})
+
+    def predict(self, X):
+        return self.sess.run(self.pred_vals, feed_dict={self.sy_obs: X})
+
 class LinearValueFunction(object):
     coef = None
     def fit(self, X, y):
@@ -84,12 +130,13 @@ class LinearValueFunction(object):
     def preproc(self, X):
         return np.concatenate([np.ones([X.shape[0], 1]), X, np.square(X)/2.0], axis=1)
 
-def main_cartpole(n_iter=100, gamma=1.0, min_timesteps_per_batch=1000, stepsize=1e-2, animate=True, logdir=None):
+def main_cartpole(n_iter=100, gamma=1.0, min_timesteps_per_batch=1000, stepsize=1e-2, animate=False, logfile=None):
     env = gym.make("CartPole-v0")
     ob_dim = env.observation_space.shape[0]
     num_actions = env.action_space.n
-    logz.configure_output_dir(logdir)
-    vf = LinearValueFunction()
+    logz.configure_output_file(logfile)
+    #vf = LinearValueFunction()
+    vf = NeuralValueFunction(ob_dim)
 
     # Symbolic variables have the prefix sy_, to distinguish them from the numerical values
     # that are computed later in these function
@@ -116,13 +163,15 @@ def main_cartpole(n_iter=100, gamma=1.0, min_timesteps_per_batch=1000, stepsize=
     sy_surr = - tf.reduce_mean(sy_adv_n * sy_logprob_n) # Loss function that we'll differentiate to get the policy gradient ("surr" is for "surrogate loss")
 
     sy_stepsize = tf.placeholder(shape=[], dtype=tf.float32) # Symbolic, in case you want to change the stepsize during optimization. (We're not doing that currently)
-    update_op = tf.train.AdamOptimizer(stepsize).minimize(sy_surr)
+    update_op = tf.train.AdamOptimizer(sy_stepsize).minimize(sy_surr)
 
     sess = tf.Session()
-    sess.__enter__() # equivalent to `with sess:`
-    tf.initialize_all_variables().run() #pylint: disable=E1101
+    sess.__enter__()
+    sess.run(tf.global_variables_initializer())
 
     total_timesteps = 0
+    obs_mean = np.zeros(ob_dim)
+    obs_std = np.zeros(ob_dim)
 
     for i in range(n_iter):
         print("********** Iteration %i ************"%i)
@@ -157,7 +206,7 @@ def main_cartpole(n_iter=100, gamma=1.0, min_timesteps_per_batch=1000, stepsize=
         for path in paths:
             rew_t = path["reward"]
             return_t = discount(rew_t, gamma)
-            vpred_t = vf.predict(path["observation"])
+            vpred_t = vf.predict((path["observation"]-obs_mean)/(obs_std+1e-8))
             adv_t = return_t - vpred_t
             advs.append(adv_t)
             vtargs.append(return_t)
@@ -167,10 +216,12 @@ def main_cartpole(n_iter=100, gamma=1.0, min_timesteps_per_batch=1000, stepsize=
         ob_no = np.concatenate([path["observation"] for path in paths])
         ac_n = np.concatenate([path["action"] for path in paths])
         adv_n = np.concatenate(advs)
-        standardized_adv_n = (adv_n - adv_n.mean()) / (adv_n.std() + 1e-8)
+        standardized_adv_n = (adv_n-adv_n.mean())/(adv_n.std()+1e-8)
         vtarg_n = np.concatenate(vtargs)
         vpred_n = np.concatenate(vpreds)
-        vf.fit(ob_no, vtarg_n)
+        obs_mean = np.average(ob_no,axis=0)
+        obs_std = np.std(ob_no,axis=0)
+        vf.fit((ob_no-obs_mean)/(obs_std+1e-8), vtarg_n)
 
         # Policy update
         _, oldlogits_na = sess.run([update_op, sy_logits_na], feed_dict={sy_ob_no:ob_no, sy_ac_n:ac_n, sy_adv_n:standardized_adv_n, sy_stepsize:stepsize})
@@ -188,13 +239,129 @@ def main_cartpole(n_iter=100, gamma=1.0, min_timesteps_per_batch=1000, stepsize=
         # Note that we fit value function AFTER using it to compute the advantage function to avoid introducing bias
         logz.dump_tabular()
 
-def main_pendulum(n_iter=100, gamma=1.0, min_timesteps_per_batch=1000, stepsize=1e-2, animate=True, logdir=None):
+def main_pendulum(n_iter=100, gamma=1.0, min_timesteps_per_batch=1000, stepsize=1e-2, animate=False, logfile=None):
     env = gym.make("Pendulum-v0")
     ob_dim = env.observation_space.shape[0]
     ac_dim = env.action_space.shape[0]
 
-    YOUR_CODE_HERE
+    logz.configure_output_file(logfile)
+    #vf = LinearValueFunction()
+    vf = NeuralValueFunction(ob_dim)
 
+    # Symbolic variables have the prefix sy_, to distinguish them from the numerical values
+    # that are computed later in these functions
+    sy_ob_no = tf.placeholder(shape=[None, ob_dim], name="ob", dtype=tf.float32) # batch of observations
+    sy_ac_n = tf.placeholder(shape=[None], name="ac", dtype=tf.float32) # batch of actions taken by the policy, used for policy gradient computation
+    sy_adv_n = tf.placeholder(shape=[None], name="adv", dtype=tf.float32) # advantage function estimate
+    sy_h1 = tf.nn.relu(dense(sy_ob_no, 32, "h1", weight_init=normc_initializer(1.0))) # hidden layer
+    sy_mean_n = dense(sy_h1, ac_dim, "final", weight_init=normc_initializer(0.05)) # Mean control output
+    sy_logstd_n = tf.Variable(tf.zeros([ac_dim]))
+    sy_std_n = tf.exp(sy_logstd_n)
+
+    # Get probabilities from normal distribution and sample from distribution
+    dist = tf.contrib.distributions.Normal(mu=tf.reshape(sy_mean_n,[-1]), sigma=sy_std_n)
+    sy_logprob_n = tf.reshape(tf.log(dist.pdf(sy_ac_n)),[-1])
+    sy_n = tf.shape(sy_ob_no)[0]
+    sy_sampled_ac = dist.sample(sy_n) # sampled actions, used for defining the policy (NOT computing the policy gradient)
+
+    # The following quantities are just used for computing KL and entropy, JUST FOR DIAGNOSTIC PURPOSES >>>>
+    sy_mean_n_old = tf.placeholder(shape=[None, ac_dim], name='old_mean', dtype=tf.float32)
+    sy_std_n_old = tf.placeholder(shape=[ac_dim], name='old_std', dtype=tf.float32)
+
+    sy_kl = tf.reduce_sum(tf.log(sy_std_n/sy_std_n_old)+(sy_std_n_old**0.5+(sy_mean_n_old-sy_mean_n)**0.5)/(2*sy_std_n**0.5)-0.5)/tf.to_float(sy_n)
+    sy_ent = tf.reduce_sum(-(1+tf.log(2*math.pi*sy_std_n**2))*0.5)
+    # <<<<<<<<<<<<<
+
+    sy_surr = -tf.reduce_mean(sy_adv_n*sy_logprob_n) # Loss function that we'll differentiate to get the policy gradient ("surr" is for "surrogate loss")
+
+    sy_stepsize = tf.placeholder(shape=[], dtype=tf.float32) # Symbolic, in case you want to change the stepsize during optimization. (We're not doing that currently)
+    update_op = tf.train.AdamOptimizer(sy_stepsize).minimize(sy_surr)
+
+    sess = tf.Session()
+    sess.__enter__()
+    sess.run(tf.global_variables_initializer())
+
+    total_timesteps = 0
+    obs_mean = np.zeros(ob_dim)
+    obs_std = np.zeros(ob_dim)
+
+    for i in range(n_iter):
+        print("********** Iteration %i ************"%i)
+
+        # Collect paths until we have enough timesteps
+        timesteps_this_batch = 0
+        paths = []
+        while True:
+            ob = env.reset()
+            terminated = False
+            obs, acs, rewards = [], [], []
+            animate_this_episode=(len(paths)==0 and (i % 10 == 0) and animate)
+            while True:
+                if animate_this_episode:
+                    env.render()
+                obs.append(ob)
+                ac = sess.run(sy_sampled_ac, feed_dict={sy_ob_no : ob[None]})
+                acs.append(ac.flatten())
+                ob, rew, done, _ = env.step(ac)
+                rewards.append(rew.flatten())
+                ob = ob.flatten()
+                if done:
+                    break
+            path = {"observation" : np.array(obs), "terminated" : terminated,
+                    "reward" : np.array(rewards), "action" : np.array(acs)}
+            paths.append(path)
+            timesteps_this_batch += pathlength(path)
+            if timesteps_this_batch > min_timesteps_per_batch:
+                break
+        total_timesteps += timesteps_this_batch
+        # Estimate advantage function
+        vtargs, vpreds, advs = [], [], []
+        for path in paths:
+            rew_t = path["reward"]
+            return_t = discount(rew_t, gamma)
+            vpred_t = vf.predict((path["observation"]-obs_mean)/(obs_std+1e-8))
+            adv_t = return_t.flatten() - vpred_t
+            advs.append(adv_t)
+            vtargs.append(return_t)
+            vpreds.append(vpred_t)
+
+        # Build arrays for policy update
+        ob_no = np.concatenate([path["observation"] for path in paths])
+        ac_n = np.concatenate([path["action"] for path in paths])
+        adv_n = np.concatenate(advs)
+        standardized_adv_n = (adv_n-adv_n.mean())/(adv_n.std()+1e-8)
+        vtarg_n = np.concatenate(vtargs).flatten()
+        vpred_n = np.concatenate(vpreds)
+        obs_mean = np.average(ob_no,axis=0)
+        obs_std = np.std(ob_no,axis=0)
+        vf.fit((ob_no-obs_mean)/(obs_std+1e-8), vtarg_n)
+
+        # Policy update
+        _, mean_n, std_n = sess.run([update_op, sy_mean_n, sy_std_n], feed_dict={sy_ob_no:ob_no, sy_ac_n:ac_n.flatten(), sy_adv_n:standardized_adv_n, sy_stepsize:stepsize})
+        kl, ent = sess.run([sy_kl, sy_ent], feed_dict={sy_ob_no:ob_no, sy_mean_n_old: mean_n, sy_std_n_old: std_n})
+
+        desired_kl = 2e-3
+        if kl > desired_kl * 2: 
+            stepsize /= 1.5
+            print('stepsize -> %s'%stepsize)
+        elif kl < desired_kl / 2: 
+            stepsize *= 1.5
+            print('stepsize -> %s'%stepsize)
+        else:
+            print('stepsize OK')
+
+        # Log diagnostics
+        logz.log_tabular("EpRewMean", np.mean([path["reward"].sum() for path in paths]))
+        logz.log_tabular("EpLenMean", np.mean([pathlength(path) for path in paths]))
+        logz.log_tabular("KLOldNew", kl)
+        logz.log_tabular("Entropy", ent)
+        logz.log_tabular("EVBefore", explained_variance_1d(vpred_n, vtarg_n))
+        logz.log_tabular("EVAfter", explained_variance_1d(vf.predict(ob_no), vtarg_n))
+        logz.log_tabular("TimestepsSoFar", total_timesteps)
+        # If you're overfitting, EVAfter will be way larger than EVBefore.
+        # Note that we fit value function AFTER using it to compute the advantage function to avoid introducing bias
+        logz.dump_tabular()
 
 if __name__ == "__main__":
-    main_cartpole(logdir=None) # when you want to start collecting results, set the logdir
+    # main_cartpole(logfile=sys.argv[1])
+    main_pendulum(logfile=sys.argv[1])

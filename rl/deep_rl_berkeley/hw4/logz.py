@@ -42,20 +42,20 @@ class G:
     log_headers = []
     log_current_row = {}
 
-def configure_output_dir(d=None):
+def configure_output_file(f=None):
     """
     Set output directory to d, or to /tmp/somerandomnumber if d is None
     """
-    G.output_dir = d or "/tmp/experiments/%i"%int(time.time())
-    assert not osp.exists(G.output_dir)
-    os.makedirs(G.output_dir)
-    G.output_file = open(osp.join(G.output_dir, "log.txt"), 'w')
+    G.output_dir = 'log' or "/tmp/experiments/%i"%int(time.time())
+    #assert not osp.exists(G.output_dir)
+    #os.makedirs(G.output_dir)
+    G.output_file = open(osp.join(G.output_dir, '{}.txt'.format(f)), 'w')
     atexit.register(G.output_file.close)
-    try:
-        cmd = "cd %s && git diff > %s 2>/dev/null"%(osp.dirname(__file__), osp.join(G.output_dir, "a.diff"))
-        subprocess.check_call(cmd, shell=True) # Save git diff to experiment directory
-    except subprocess.CalledProcessError:
-        print("configure_output_dir: not storing the git diff, probably because you're not in a git repo")
+    #try:
+    #    cmd = "cd %s && git diff > %s 2>/dev/null"%(osp.dirname(__file__), osp.join(G.output_dir, "a.diff"))
+    #    subprocess.check_call(cmd, shell=True) # Save git diff to experiment directory
+    #except subprocess.CalledProcessError:
+    #    print("configure_output_dir: not storing the git diff, probably because you're not in a git repo")
     print(colorize("Logging data to %s"%G.output_file.name, 'green', bold=True))
 
 def log_tabular(key, val):
